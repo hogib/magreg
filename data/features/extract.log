@@ -1,0 +1,5 @@
+[Parallel(n_jobs=-1)]: Using backend LokyBackend with 12 concurrent workers.
+12617 events with waveforms and catalogue entries
+[Parallel(n_jobs=-1)]: Done  12 tasks      | elapsed:    3.9s
+[Parallel(n_jobs=-1)]: Done 408 tasks      | elapsed:  1.1min
+[Parallel(n_jobs=-1)]: Done 1128 tasks      | elapsed:  3.1min

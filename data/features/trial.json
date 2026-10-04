@@ -1,0 +1,43 @@
+{
+  "config": {
+    "noise": [
+      -6.0,
+      -1.0
+    ],
+    "p_len": 2.0,
+    "s_pre": 0.2,
+    "s_len": 5.0,
+    "pol_len": 1.0,
+    "env_pre": 1.0,
+    "env_post": 10.0,
+    "pick_before": 1.5,
+    "pick_after": 3.0,
+    "bp": [
+      1.0,
+      40.0
+    ],
+    "hp": 0.5,
+    "p_band": [
+      1.0,
+      40.0
+    ],
+    "s_band": [
+      0.7,
+      40.0
+    ],
+    "min_snr": 3.0
+  },
+  "qc": {
+    "ok": 1135,
+    "low_snr_p": 689,
+    "low_snr_s": 27,
+    "window_outside_record": 7,
+    "clipped": 3,
+    "gap": 60,
+    "missing_components": 5,
+    "short_record": 3
+  },
+  "events": 200,
+  "records": 1135,
+  "seconds": 15.4
+}
