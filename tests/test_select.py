@@ -45,3 +45,11 @@ def test_deterministic():
     a = balanced_selection(ev, cap=150, seed=3).index
     b = balanced_selection(ev, cap=150, seed=3).index
     assert a.equals(b)
+
+
+def test_cell_share_limit_applies_to_uncapped_bins():
+    ev = catalog()
+    sel = balanced_selection(ev, cap=10_000, max_cell_share=0.2, min_cell_cap=3)
+    for _, g in sel.groupby("mag_bin"):
+        top = g["cell"].value_counts().iloc[0]
+        assert top <= max(3, np.ceil(0.2 * len(g)))

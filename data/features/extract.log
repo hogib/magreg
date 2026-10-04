@@ -3,3 +3,22 @@
 [Parallel(n_jobs=-1)]: Done  12 tasks      | elapsed:    3.9s
 [Parallel(n_jobs=-1)]: Done 408 tasks      | elapsed:  1.1min
 [Parallel(n_jobs=-1)]: Done 1128 tasks      | elapsed:  3.1min
+[Parallel(n_jobs=-1)]: Done 2136 tasks      | elapsed:  6.7min
+[Parallel(n_jobs=-1)]: Done 3432 tasks      | elapsed: 12.0min
+[Parallel(n_jobs=-1)]: Done 5016 tasks      | elapsed: 15.7min
+[Parallel(n_jobs=-1)]: Done 6888 tasks      | elapsed: 21.0min
+[Parallel(n_jobs=-1)]: Done 9048 tasks      | elapsed: 25.8min
+[Parallel(n_jobs=-1)]: Done 11496 tasks      | elapsed: 30.3min
+[Parallel(n_jobs=-1)]: Done 12594 out of 12617 | elapsed: 32.2min remaining:    3.5s
+[Parallel(n_jobs=-1)]: Done 12617 out of 12617 | elapsed: 32.3min finished
+{
+  "ok": 78732,
+  "low_snr_p": 49583,
+  "low_snr_s": 2670,
+  "window_outside_record": 425,
+  "clipped": 313,
+  "gap": 3761,
+  "missing_components": 454,
+  "short_record": 325
+}
+78732 records, 11758 events, 131 features -> data/features/features.parquet  (1937.8 s)

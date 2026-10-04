@@ -9,8 +9,10 @@ uv sync
 uv run magreg extract     # -> data/features/features.parquet
 uv run magreg select      # magnitude-balanced event list
 uv run magreg audit       # which features still track SNR
+uv run magreg train       # LightGBM + baselines + importance -> runs/ (leaky features excluded)
 uv run pytest
 ```
 
 See [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) for the design,
-feature definitions, selection method and known leaks.
+[docs/FEATURES.md](docs/FEATURES.md) for every feature with formulas, and
+[docs/RESULTS.md](docs/RESULTS.md) for results and the known leaks.

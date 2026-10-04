@@ -216,31 +216,98 @@ def _fit(x, y, w, ev_ids, cfg: TrainConfig, seed: int) -> lgb.Booster:
                      callbacks=[lgb.early_stopping(cfg.early_stopping, verbose=False)])
 
 
-def group_permutation(bst, x: pd.DataFrame, y_ev: pd.DataFrame, cols: list[str],
-                      rng, base_mae: float) -> dict[str, float]:
-    """Event-level MAE increase when a whole feature family is shuffled.
+def quantity(col: str) -> str:
+    """The physical quantity a column measures: an event median and its
+    per-station source column are the same quantity."""
+    return "f_" + col[len("f_evmed_"):] if col.startswith("f_evmed_") else col
 
-    Shuffling a family jointly (rows permuted together) avoids the
-    correlated-feature trap where each member alone looks unimportant.
-    """
-    fams: dict[str, list[int]] = {}
-    for i, c in enumerate(cols):
-        fams.setdefault(family(c), []).append(i)
-    xv = x.to_numpy()
+
+# Composite concepts whose members can stand in for each other, so the single
+# quantity test understates them. A column may belong to several concepts;
+# each concept is shuffled on its own. Matched on ``quantity(col)``.
+CONCEPTS = {
+    "corner_freq_snoke_P+S": lambda q: q in ("f_pz_qc_snoke_fc_hz", "f_sh_qc_snoke_fc_hz"),
+    "corner_freq_all": lambda q: q.endswith("fc_hz") or q.startswith("f_fc_p_over_s"),
+    "distance_all": lambda q: q in ("ctl_epi_km", "ctl_hypo_km", "ctl_sp_s"),
+    "rupture_duration_lpdt": lambda q: q.startswith("f_lpdt_"),
+}
+
+
+def concept_groups(cols: list[str]) -> dict[str, list[int]]:
     out = {}
-    for fam, idx in fams.items():
-        xp = xv.copy()
-        perm = rng.permutation(len(xp))
-        xp[:, idx] = xv[perm][:, idx]
-        p = pd.Series(bst.predict(xp, num_iteration=bst.best_iteration), index=x.index)
-        ev = y_ev.assign(pred=p).groupby("event_id").agg(mag=("mag", "first"), pred=("pred", "median"))
-        out[fam] = float(np.mean(np.abs(ev["pred"] - ev["mag"])) - base_mae)
+    for name, match in CONCEPTS.items():
+        idx = [i for i, c in enumerate(cols) if match(quantity(c))]
+        if idx:
+            out[name] = idx
     return out
 
 
-def run(df: pd.DataFrame, cfg: TrainConfig, sets=FEATURE_SETS, drop: set[str] = frozenset(),
-        out: Path | None = None, log=print) -> dict:
+def group_permutation(bst, x: pd.DataFrame, y_ev: pd.DataFrame, cols: list[str],
+                      rng, base_mae: float, key=family, n_shuffles: int = 3,
+                      groups: dict[str, list[int]] | None = None) -> dict[str, float]:
+    """Event-level MAE increase when every column in a group is shuffled.
+
+    Columns are grouped by ``key`` (``family`` or ``quantity``) and permuted
+    with one shared row permutation, so the group's information is destroyed
+    as a whole: no surviving copy (e.g. the event median of a shuffled
+    per-station feature) can stand in for it. Averaged over ``n_shuffles``.
+    Correlated groups still substitute for each other, so a quantity's
+    importance is what it adds *given* the others. Pass explicit ``groups``
+    (name -> column indices, may overlap) to test composites instead.
+    """
+    if groups is None:
+        groups = {}
+        for i, c in enumerate(cols):
+            groups.setdefault(key(c), []).append(i)
+    xv = x.to_numpy()
+    out = {}
+    for g, idx in groups.items():
+        deltas = []
+        for _ in range(n_shuffles):
+            xp = xv.copy()
+            xp[:, idx] = xv[rng.permutation(len(xp))][:, idx]
+            p = pd.Series(bst.predict(xp, num_iteration=bst.best_iteration), index=x.index)
+            ev = y_ev.assign(pred=p).groupby("event_id").agg(mag=("mag", "first"), pred=("pred", "median"))
+            deltas.append(float(np.mean(np.abs(ev["pred"] - ev["mag"])) - base_mae))
+        out[g] = float(np.mean(deltas))
+    return out
+
+
+LEAK_THRESHOLD = 0.15
+
+
+def leaky_features(df: pd.DataFrame, threshold: float = LEAK_THRESHOLD) -> tuple[set[str], pd.DataFrame]:
+    """``f_`` columns whose within-event leak score exceeds ``threshold``.
+
+    The within-event score uses SNR and distance only, never the label, so
+    auditing the training table itself is safe and can never go stale. A
+    feature whose score cannot be computed (NaN) is treated as leaky.
+    """
+    from .audit import leak_table
+
+    t = leak_table(df)
+    return set(t.index[~(t["leak_score"] <= threshold)]), t
+
+
+def run(df: pd.DataFrame, cfg: TrainConfig, sets=FEATURE_SETS, out: Path | None = None,
+        include_leaky: bool = False, leak_threshold: float = LEAK_THRESHOLD, log=print) -> dict:
+    """Train every feature set on shared folds.
+
+    Leaky features are excluded unless ``include_leaky`` is set, in which
+    case the run is labelled as such in ``metrics.json``.
+    """
     df = df.reset_index(drop=True)
+    if include_leaky:
+        drop: set[str] = set()
+        log("WARNING: include_leaky — features that track station SNR are model inputs; "
+            "scores are not amplitude-free")
+    else:
+        drop, audit = leaky_features(df, leak_threshold)
+        if out:
+            out.mkdir(parents=True, exist_ok=True)
+            audit.to_csv(out / "leak_audit.csv")
+        log(f"excluding {len(drop)} of {len(audit)} features with leak_score > {leak_threshold} "
+            f"(--include-leaky to keep them)")
     y = df["mag"].to_numpy()
     w = sample_weights(df, cfg)
     folds = list(make_folds(df, cfg))
@@ -252,7 +319,10 @@ def run(df: pd.DataFrame, cfg: TrainConfig, sets=FEATURE_SETS, drop: set[str] = 
         mu = np.average(y[tr], weights=w[tr])
         ev = df.loc[te].drop_duplicates("event_id")["mag"].to_numpy()
         const_rows.append(float(np.mean(np.abs(ev - mu))))
-    results, preds, shap_rows, perm_rows = {}, [], [], []
+    results, preds, shap_rows, perm_rows, qty_rows, con_rows = {}, [], [], [], [], []
+    # Importance and the per-magnitude table come from the main model, or
+    # whichever set was trained when it was not requested.
+    main = next((s for s in ("shape", "shape_only") if s in sets), sets[0])
     for name in sets:
         cols = feature_columns(df, name, drop)
         fold_rows = []
@@ -274,12 +344,14 @@ def run(df: pd.DataFrame, cfg: TrainConfig, sets=FEATURE_SETS, drop: set[str] = 
             fold_rows.append({"repeat": r, "fold": k, "trees": bst.best_iteration,
                               **{f"rec_{a}": b for a, b in m_rec.items()},
                               **{f"ev_{a}": b for a, b in m_ev.items()}})
-            if name == "shape":
+            if name == main:
                 contrib = bst.predict(xte.to_numpy(), num_iteration=bst.best_iteration, pred_contrib=True)
                 shap_rows.append(pd.Series(np.abs(contrib[:, :-1]).mean(0), index=fcols))
-                perm = group_permutation(bst, xte, df.loc[te, ["event_id", "mag"]], fcols, rng,
-                                         m_ev["mae"])
-                perm_rows.append(perm)
+                yev = df.loc[te, ["event_id", "mag"]]
+                perm_rows.append(group_permutation(bst, xte, yev, fcols, rng, m_ev["mae"], key=family))
+                qty_rows.append(group_permutation(bst, xte, yev, fcols, rng, m_ev["mae"], key=quantity))
+                con_rows.append(group_permutation(bst, xte, yev, fcols, rng, m_ev["mae"],
+                                                  groups=concept_groups(fcols)))
             log(f"  {name:<11} r{r} f{k}: event MAE {m_ev['mae']:.3f} "
                 f"(n_ev={m_ev['n']}, trees={bst.best_iteration})")
         fr = pd.DataFrame(fold_rows)
@@ -293,14 +365,26 @@ def run(df: pd.DataFrame, cfg: TrainConfig, sets=FEATURE_SETS, drop: set[str] = 
 
     pred = pd.concat(preds, ignore_index=True)
     shap = pd.concat(shap_rows, axis=1)
-    shap_tbl = pd.DataFrame({"mean_abs_shap": shap.mean(1), "sd": shap.std(1)})
+    shap_tbl = pd.DataFrame({"mean_abs_shap": shap.mean(axis=1), "sd": shap.std(axis=1)})
     shap_tbl["family"] = [family(c) for c in shap_tbl.index]
     shap_tbl = shap_tbl.sort_values("mean_abs_shap", ascending=False)
     fam_shap = shap_tbl.groupby("family")["mean_abs_shap"].sum()
     perm = pd.DataFrame(perm_rows)
+    qty = pd.DataFrame(qty_rows)
+    qty_shap = shap_tbl.groupby(shap_tbl.index.map(quantity))["mean_abs_shap"].sum()
+    qty_tbl = pd.DataFrame({"perm_delta_mae": qty.mean(), "perm_sd": qty.std(),
+                            "folds_positive": (qty > 0).mean(), "sum_abs_shap": qty_shap})
+    qty_tbl["family"] = [family(c) for c in qty_tbl.index]
+    qty_tbl = qty_tbl.sort_values("perm_delta_mae", ascending=False)
+    con = pd.DataFrame(con_rows)
+    con_tbl = pd.DataFrame({"perm_delta_mae": con.mean(), "perm_sd": con.std(),
+                            "folds_positive": (con > 0).mean()}).sort_values("perm_delta_mae", ascending=False)
+    groups = concept_groups(list(shap.index))
+    con_tbl["members"] = [", ".join(sorted({quantity(shap.index[i]) for i in groups.get(n, [])}))
+                          for n in con_tbl.index]
     fam_tbl = pd.DataFrame({"perm_delta_mae": perm.mean(), "perm_sd": perm.std(),
                             "sum_abs_shap": fam_shap}).sort_values("perm_delta_mae", ascending=False)
-    ev_shape = event_level(pred[pred["set"] == "shape"])
+    ev_shape = event_level(pred[pred["set"] == main])
     bymag = by_magnitude(ev_shape)
 
     summary = pd.DataFrame({k: {m: v[m] for m in ("ev_mae_mean", "ev_mae_sd", "rec_mae_mean",
@@ -318,10 +402,14 @@ def run(df: pd.DataFrame, cfg: TrainConfig, sets=FEATURE_SETS, drop: set[str] = 
         pred.to_parquet(out / "predictions.parquet", index=False)
         shap_tbl.to_csv(out / "importance_shap.csv")
         fam_tbl.to_csv(out / "importance_families.csv")
+        qty_tbl.to_csv(out / "importance_quantities.csv")
+        con_tbl.to_csv(out / "importance_concepts.csv")
         bymag.to_csv(out / "by_magnitude.csv")
         summary.to_csv(out / "summary.csv")
         (out / "metrics.json").write_text(json.dumps(
-            {"config": asdict(cfg), "dropped_features": sorted(drop), "gap_closed": gap,
+            {"config": asdict(cfg), "include_leaky": include_leaky,
+             "leak_threshold": None if include_leaky else leak_threshold,
+             "dropped_features": sorted(drop), "gap_closed": gap,
              "constant_mae_event": const, "sets": results}, indent=2, default=float))
     return {"summary": summary, "gap_closed": gap, "constant_mae": const,
-            "shap": shap_tbl, "families": fam_tbl, "by_mag": bymag}
+            "shap": shap_tbl, "families": fam_tbl, "quantities": qty_tbl, "concepts": con_tbl, "by_mag": bymag}

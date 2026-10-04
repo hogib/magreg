@@ -1,4 +1,4 @@
-"""``magreg extract | select | audit``."""
+"""``magreg extract | select | audit | train``."""
 
 from __future__ import annotations
 
@@ -74,7 +74,8 @@ def cmd_select(a):
         ev = ev[ev["mag_type"].isin(a.mag_types)]
     ev = ev[ev["mag"] >= a.min_mag]
     chosen = balanced_selection(ev, cap=a.cap, width=a.width, origin=a.min_mag,
-                                cell_deg=a.cell_deg, seed=a.seed)
+                                cell_deg=a.cell_deg, seed=a.seed,
+                                max_cell_share=a.max_cell_share)
     a.out.parent.mkdir(parents=True, exist_ok=True)
     chosen.reset_index().to_csv(a.out, index=False)
     with pd.option_context("display.max_rows", None):
@@ -108,16 +109,12 @@ def cmd_train(a):
         raise SystemExit(f"{a.selection} not found; run `magreg select` or pass --selection ''")
     if a.mag_types:
         df = df[df["mag_type"].isin(a.mag_types)]
-    drop: set[str] = set()
-    if a.drop_leaky is not None:
-        t = pd.read_csv(a.audit, index_col=0)
-        drop = set(t.index[t["leak_score"] > a.drop_leaky])
-        print(f"dropping {len(drop)} features with leak_score > {a.drop_leaky}")
     cfg = TrainConfig(split=a.split, folds=a.folds, repeats=a.repeats, seed=a.seed,
                       weight=a.weight, tail_weight=a.tail_weight,
                       event_medians=not a.no_event_medians)
     print(f"{len(df)} records, {df['event_id'].nunique()} events, {df['station'].nunique()} stations")
-    res = run(df, cfg, sets=a.sets or FEATURE_SETS, drop=drop, out=a.out)
+    res = run(df, cfg, sets=a.sets or FEATURE_SETS, out=a.out,
+              include_leaky=a.include_leaky, leak_threshold=a.leak_threshold)
     with pd.option_context("display.width", 160, "display.float_format", "{:.3f}".format):
         print("\n== event-level, mean over folds ==")
         print(res["summary"])
@@ -125,6 +122,10 @@ def cmd_train(a):
               f"gap ctl->amplitude closed by shape: {res['gap_closed']:.1%}")
         print("\n== feature families (shape model): event-MAE increase when shuffled ==")
         print(res["families"])
+        print("\n== physical quantities (station value + event median shuffled together) ==")
+        print(res["quantities"].head(25))
+        print("\n== concepts (substitutable quantities shuffled jointly) ==")
+        print(res["concepts"].drop(columns="members"))
         print("\n== top 25 features by mean |SHAP| ==")
         print(res["shap"].head(25))
         print("\n== shape model by magnitude ==")
@@ -158,6 +159,8 @@ def main(argv=None):
     s.add_argument("--min-records", type=int, default=3)
     s.add_argument("--mag-types", nargs="*", default=None, help="e.g. ML")
     s.add_argument("--cell-deg", type=float, default=1.0)
+    s.add_argument("--max-cell-share", type=float, default=0.2,
+                   help="max fraction of a magnitude bin from one space-time cell (1 = off)")
     s.add_argument("--seed", type=int, default=0)
     s.add_argument("-o", "--out", type=Path, default=DATA / "features/selection.csv")
     s.set_defaults(fn=cmd_select)
@@ -181,8 +184,10 @@ def main(argv=None):
     t.add_argument("--weight", choices=["event", "none"], default="event")
     t.add_argument("--tail-weight", action="store_true", help="also flatten magnitude histogram")
     t.add_argument("--no-event-medians", action="store_true", help="skip f_evmed_* features")
-    t.add_argument("--drop-leaky", type=float, default=None, help="drop f_ with audit leak_score above this")
-    t.add_argument("--audit", type=Path, default=DATA / "features/leak_audit.csv")
+    t.add_argument("--leak-threshold", type=float, default=0.15,
+                   help="exclude f_ features whose within-event |partial rho| with SNR exceeds this")
+    t.add_argument("--include-leaky", action="store_true",
+                   help="keep features that track SNR (amplitude leaks in; for comparison only)")
     t.add_argument("-o", "--out", type=Path, default=Path("runs/default"))
     t.set_defaults(fn=cmd_train)
 

@@ -9,13 +9,19 @@ The catalogue is ~70% M2–3. Method:
    follows the natural tail. Nothing is duplicated: oversampling the M>4 tail
    would just let the model memorise ~170 events. Any remaining imbalance is
    better handled with sample weights at training time.
-3. **Spread** within a capped bin: events are grouped into space–time cells
+3. **Spread** within a bin: events are grouped into space–time cells
    (``cell_deg`` lat/lon squares × calendar year) and drawn round-robin across
    cells in random order. Small events cluster in swarms and aftershock
    sequences; a uniform draw would let a few sequences (one source region, one
    path, one set of stations) dominate the low-magnitude bins, and the model
    could tell magnitudes apart by *where* the events are rather than by their
    waveforms.
+4. **Limit cells** in every bin, including bins under the cap:
+   ``max_cell_share`` (CLI default 0.2) bounds the share of a bin that one
+   cell may supply. Needed because big events are rarer and cluster in
+   sequences: on this catalogue the 2025 Sındırgı sequence (cell
+   ``39_28_2025``) gave 24–52% of every bin from M2.8 up and ~1% below, a
+   regional signature the model could learn instead of source physics.
 
 Eligibility is applied first: an event only counts if it has at least
 ``min_records`` records that survived QC. The cap therefore balances what the
@@ -33,6 +39,28 @@ def mag_bin(m: pd.Series, width: float, origin: float) -> pd.Series:
     return np.floor((m - origin) / width + 1e-6).astype(int)
 
 
+def _round_robin(grp: pd.DataFrame, rng) -> list:
+    """Bin events ordered by cycling over space–time cells in random order."""
+    cells = [rng.permutation(g.index.to_numpy()) for _, g in grp.groupby("cell")]
+    cells = [cells[i] for i in rng.permutation(len(cells))]
+    out = []
+    for depth in range(max(len(c) for c in cells)):
+        out.extend(c[depth] for c in cells if depth < len(c))
+    return out
+
+
+def _take(order: list, cells: pd.Series, cap: int, per_cell: int) -> list:
+    taken, count = [], {}
+    for i in order:
+        c = cells[i]
+        if count.get(c, 0) < per_cell:
+            taken.append(i)
+            count[c] = count.get(c, 0) + 1
+            if len(taken) == cap:
+                break
+    return taken
+
+
 def balanced_selection(
     events: pd.DataFrame,
     cap: int,
@@ -40,10 +68,15 @@ def balanced_selection(
     origin: float = 2.0,
     cell_deg: float = 1.0,
     seed: int = 0,
+    max_cell_share: float = 1.0,
+    min_cell_cap: int = 3,
 ) -> pd.DataFrame:
     """Return the selected subset of ``events`` (needs mag, lat, lon, time).
 
-    Adds ``mag_bin`` (bin lower edge) and ``cell`` columns.
+    ``max_cell_share`` limits any one space–time cell to that fraction of
+    its bin's final count (never below ``min_cell_cap`` events), including
+    bins under the cap — this is what stops one productive sequence from
+    supplying most of the large events. Adds ``mag_bin`` and ``cell``.
     """
     rng = np.random.default_rng(seed)
     ev = events.copy()
@@ -56,22 +89,18 @@ def balanced_selection(
     )
     keep = []
     for _, grp in ev.groupby("mag_bin", sort=True):
-        if len(grp) <= cap:
-            keep.append(grp.index.to_numpy())
-            continue
-        cells = [rng.permutation(g.index.to_numpy()) for _, g in grp.groupby("cell")]
-        order = rng.permutation(len(cells))
-        cells = [cells[i] for i in order]
-        picked: list = []
-        depth = 0
-        while len(picked) < cap:
-            for c in cells:
-                if depth < len(c):
-                    picked.append(c[depth])
-                    if len(picked) == cap:
-                        break
-            depth += 1
-        keep.append(np.asarray(picked))
+        order = _round_robin(grp, rng)
+        per_cell = len(order)
+        taken = _take(order, ev["cell"], cap, per_cell)
+        # Shrink the per-cell limit until it satisfies the share on the final
+        # count (dropping events lowers the count, which lowers the limit).
+        while max_cell_share < 1.0:
+            lim = max(min_cell_cap, int(np.ceil(max_cell_share * len(taken))))
+            if lim >= per_cell:
+                break
+            per_cell = lim
+            taken = _take(order, ev["cell"], cap, per_cell)
+        keep.append(np.asarray(taken))
     return ev.loc[np.concatenate(keep)].sort_values("time")
 
 

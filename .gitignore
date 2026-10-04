@@ -9,3 +9,6 @@ wheels/
 # Virtual environments
 .venv
 runs/
+
+# Generated data (reproducible with `magreg extract`, ~30 min; 76 MB)
+data/features/features.parquet

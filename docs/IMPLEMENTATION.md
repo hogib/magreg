@@ -9,8 +9,11 @@ removed, not the raw MAE.
 uv run magreg extract           # waveforms -> data/features/features.parquet (+ .json QC/config)
 uv run magreg select            # balanced event list -> data/features/selection.csv
 uv run magreg audit --events data/features/selection.csv   # SNR leak table
+uv run magreg train -o runs/<name>   # LightGBM + baselines + importance
 uv run pytest
 ```
+
+Every feature, with formulas and references: [FEATURES.md](FEATURES.md).
 
 ## Data
 
@@ -142,6 +145,17 @@ peak, P-window maximum relative to the peak, exponential decay rate and
 power-law exponent from the peak to window end, energy centroid time, mean
 fill.
 
+**Physics-based additions** (from a literature pass; formulas in FEATURES.md):
+attenuation-corrected source fits using a regional Q(f) = 60·f^0.85 (S) and
+1.5× that for P; Snoke/Andrews non-parametric fc; P/S corner ratio; LPDT
+plateau time and growth rate (Colombelli & Zollo 2015); Husid significant
+durations D5-75, D5-95 and D20-80; peak-ratio periods 2π·PGD/PGV and
+2π·PGV/PGA; and, at training time, per-event medians of the main source
+estimates. Rejected because they need the amplitude or a reference event:
+radiated energy and apparent stress (need M0), empirical-Green's-function
+spectral ratios (choosing the smaller event uses relative magnitude), Pd and
+IV2 (amplitude), coda duration to noise (= Md).
+
 ## The invariance contract
 
 `tests/test_invariance.py` runs the full record pipeline on a synthetic
@@ -160,11 +174,20 @@ spectrum, and low-SNR rejection.
 3. **Cap** each bin at `--cap` events (default 500). Smaller bins keep
    everything; nothing is duplicated — oversampling ~170 M>4 events only
    invites memorisation. Use sample weights at training time for the tail.
-4. **Spread** inside a capped bin: group events into cells of 1°×1°×year and
+4. **Spread** inside each bin: group events into cells of 1°×1°×year and
    draw round-robin across cells in random order. Small events come in swarms;
    a uniform draw lets a few sequences (one region, one path, one station
    set) fill the low bins, and the model could then separate magnitudes by
-   region. The test catalogue with a 50% swarm drops to <15% swarm share.
+   region. On a test catalogue where half the events are one swarm, the swarm
+   share drops below 15%.
+5. **Limit any one cell** to `--max-cell-share` (0.2) of a bin's final count,
+   never below 3 events, *including bins under the cap*. Larger events are
+   rare and cluster in sequences. Without this limit, the 2025 Sındırgı
+   sequence (cell `39_28_2025`, two M6.1 mainshocks) supplied 24–52% of
+   every bin from M2.8 up but about 1% below it. That is a regional
+   signature which survives a station-disjoint split, through back-azimuth,
+   depth and regional κ. The limit cost 398 events (4,095 → 3,697 at cap
+   500).
 
 The printed summary shows per bin: available, selected, number of cells and
 the largest cell's share.
@@ -173,14 +196,101 @@ Record-level note: big events have more stations, so even an event-balanced
 set is record-imbalanced. Weight records by `1 / n_records(event)` or
 aggregate predictions per event.
 
+## Training (`train.py`)
+
+`magreg train` reads the feature table, keeps the events in
+`data/features/selection.csv` (pass `--selection ''` for all events),
+and trains four LightGBM models on **identical folds**:
+
+| set | inputs | role |
+|---|---|---|
+| `shape` | `f_` + `ctl_` (+ `f_evmed_`) | the model |
+| `shape_only` | `f_` (+ `f_evmed_`) | shapes without distance |
+| `ctl` | `ctl_` | distance/depth floor: selection effect only |
+| `amplitude` | `ref_log10_peak_counts` + `ctl_` | ceiling: what amplitude plus distance give |
+
+Headline numbers: event-level MAE (median of the station predictions) for
+each set, the constant (train-mean) MAE, and **gap closed** =
+(MAE_ctl − MAE_shape) / (MAE_ctl − MAE_amplitude).
+
+* **Splits.** `--split both` (default): events and stations are each
+  split into K = 5 groups. Fold k tests on records whose event *and* station
+  are both in group k, and trains on records with neither, so no event and no
+  site response is shared. Only ~1/K² of records are tested per fold, so the
+  split is repeated (`--repeats 3`) with fresh partitions and results are
+  mean ± sd over folds × repeats. `--split event` is event-disjoint only,
+  with full coverage.
+* **Weights.** `--weight event` (default): each event's records sum to 1, so
+  large events (more stations) don't dominate. `--tail-weight` also multiplies
+  by inverse bin frequency (capped at 10×) to flatten the tail beyond the
+  selection cap.
+* **Model.** Huber loss (δ 0.5), lr 0.03, 31 leaves, min 40 samples per
+  leaf, 0.8 feature and bagging fractions, L2 1.0. Early stopping (200
+  rounds) on an inner 15% event-disjoint split of the training fold.
+* **Event medians** `f_evmed_*` are computed separately inside each train and
+  test subset, so a fold never aggregates records it cannot see.
+* **Importance.**
+  1. Mean |SHAP| per feature: LightGBM's exact TreeSHAP via
+     `pred_contrib`, on test records, averaged over folds.
+  2. **Family permutation**: shuffle all columns of a family together across
+     test rows and measure the rise in event-level MAE. Shuffling correlated
+     features jointly avoids the case where every member of a correlated
+     group looks unimportant on its own. Families are listed in
+     `train.family()`.
+  3. **Quantity permutation** (`importance_quantities.csv`): the same test
+     with one group per physical quantity, where a per-station column and its
+     `f_evmed_` median are shuffled together (`train.quantity()`), 3 shuffles
+     per fold. It answers "which measurement matters", which the family view
+     can't, because its `event_median` family lumps every median together.
+     It reports `folds_positive`, the share of folds where shuffling hurt.
+     Correlated quantities (e.g. P and S corner frequency) still stand in for
+     each other, so each value is what that quantity adds given the others.
+  4. **Concept permutation** (`importance_concepts.csv`): substitutable
+     quantities shuffled jointly, e.g. P and S corner frequency together, all
+     corner estimates, all distance controls, LPDT. The groups are defined in
+     `train.CONCEPTS`, may overlap, and each is tested on its own.
+  Split-gain importance is not reported; it favours high-cardinality and
+  correlated features.
+* **Outputs** (`runs/<name>/`): `metrics.json` (config, per-fold metrics),
+  `summary.csv`, `predictions.parquet` (all out-of-fold record predictions,
+  every set), `importance_shap.csv`, `importance_families.csv`,
+  `importance_quantities.csv`, `importance_concepts.csv`, `leak_audit.csv`, `by_magnitude.csv` (event MAE and bias per 0.5-unit bin: watch for
+  regression to the mean at the tails).
+* **Leaky features are excluded by default.** Every run audits its own
+  training table (the within-event leak score uses SNR and distance, never
+  the label) and drops `f_` columns with `leak_score` > `--leak-threshold`
+  (0.15), or with a score that can't be computed. Event medians of dropped
+  features go with them. The audit is saved as `runs/<name>/leak_audit.csv`
+  and the dropped list in `metrics.json`. `--include-leaky` keeps everything
+  for comparison: it prints a warning and sets `"include_leaky": true` in
+  `metrics.json`, so such a run can't be mistaken for an amplitude-free one.
+
 ## Leak audit (`audit.py`)
 
-For each `f_` feature: Spearman with magnitude, partial Spearman with
-magnitude given log distance, and **partial Spearman with log SNR (P and S)
-given magnitude and log distance**. At fixed magnitude and distance, SNR
-varies only through station noise, site gain and radiation; a feature that
-tracks it is reading the noise floor. `leak_score` is the larger of the two
-SNR partials; the table is sorted by it.
+For each `f_` feature:
+
+* `rho_mag`: Spearman correlation with magnitude; `prho_mag|dist`: partial
+  correlation given log hypocentral distance.
+* `prho_snr_*|mag,dist`: partial correlation with log SNR (P and S) given
+  magnitude and distance, across events. This over-flags genuine source
+  features. Catalogue magnitudes have errors, so an event truly larger than
+  its ML has higher SNR *and* a lower corner, and a good fc estimate
+  correlates with SNR for physical reasons. Reported as
+  `leak_score_cross_event`.
+* **`leak_score`** (primary): the same partial correlation **within events**.
+  Ranks are demeaned per event, which removes the source completely, then
+  residualised on log distance. Inside one event SNR varies only with station
+  noise, site and radiation pattern, so a feature that follows it is reading
+  the noise floor.
+
+First results on the 3,697 selected events: 57 of 131 features have
+`leak_score` > 0.2. The worst are high-frequency shape measures (sample and
+permutation entropy, 32–45 Hz fraction, flatness, spectral slope, κ,
+Boatwright n), at 0.4–0.54. These are also the features most correlated with
+magnitude. The cleanest magnitude carriers are the attenuation-corrected
+Snoke corner `f_sh_qc_snoke_fc_hz` (ρ −0.29, leak 0.05), `f_sh_centroid_hz`
+(−0.28, 0.05), `f_sh_T_va_s` (+0.28, 0.09) and `f_pz_tau_p_max` (+0.29, 0.18).
+`magreg train` excludes features above 0.15 by default (see Training).
 
 ## Known residual leaks
 
@@ -195,6 +305,6 @@ SNR partials; the table is sorted by it.
 
 ## Performance
 
-Python/numpy, joblib over event files. ~14 s per 200 events on 12 cores, so
-the full set takes ~15 min; travel-time table build is a one-off ~2.5 min.
-No compiled code was needed.
+Python/numpy, joblib over event files. ~14 s per 200 events on 12 cores
+(before the physics features), so ~15–20 min for the full set; the
+travel-time table build is a one-off ~2.5 min. No compiled code was needed.
