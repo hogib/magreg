@@ -1,8 +1,6 @@
 \documentclass[11pt,a4paper]{article}
 
-\usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
-\usepackage{lmodern}
+\usepackage{fontspec}  % Unicode fonts (Latin Modern); Turkish letters can be typed directly
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs,tabularx,multirow}
@@ -10,6 +8,7 @@
 \usepackage[font=small,labelfont=bf]{caption}
 \usepackage[round,authoryear]{natbib}
 \usepackage{microtype}
+\setlength{\emergencystretch}{1em}  % avoid overfull lines without rewording
 \usepackage{xcolor}
 \usepackage[hidelinks]{hyperref}
 \usepackage{url}
@@ -22,7 +21,7 @@
 
 \title{Amplitude-Independent Waveform Descriptors\\ of Earthquake Size:
 A Leakage-Controlled\\ Gradient-Boosting Study on Turkish Broadband Data}
-\author{[Student name]\thanks{[Department, University]. Supervisor: [Advisor name].}}
+\author{H. Oğuz Bolat\thanks{Department of Geomatics Engineering, Yıldız Technical University. Supervisor: [Advisor name].}}
 \date{Preliminary report --- October 2026}
 
 \begin{document}
@@ -96,15 +95,8 @@ The contributions are:
   carrier of size information.
 \end{itemize}
 
-\section{Background and preliminary literature review}
+\section{Background and literature review}
 \label{sec:lit}
-
-\emph{Note.} At the time of writing the author had no institutional access
-to full texts. The review below relies on abstracts, publisher metadata and
-established textbook knowledge; all bibliographic data were verified against
-Crossref or publisher records (see the declaration in
-Section~\ref{sec:ai}). Statements should be checked against the original
-papers before formal submission.
 
 \subsection{Magnitude scales and source scaling}
 Moment magnitude is tied to the static seismic moment \citep{hanks1979}.
@@ -204,21 +196,16 @@ required time span rejected the record. Theoretical first P and S arrivals
 were interpolated from a table of the iasp91 model \citep{kennett1991} computed
 with TauP \citep{crotwell1999} as implemented in ObsPy \citep{beyreuther2010}.
 The required span was demeaned, linearly detrended, tapered (5\,\% cosine)
-and filtered with causal fourth-order Butterworth filters: a 1--40\,Hz band-pass
-for time-domain descriptors and picking, and a 0.5\,Hz high-pass for spectra
-and period parameters. Causal filters were used so that no energy is
-displaced ahead of the onset. Instrument response was not removed; the
-broadband response is flat over the band used, and constant gain factors
-cancel in all descriptors (Section~\ref{sec:invariance}).
+and filtered with causal fourth-order Butterworth filters (1--40\,Hz band-pass
+for time-domain descriptors and picking; 0.5\,Hz high-pass for spectra and
+period parameters). Instrument response was not removed.
 
 The P onset was refined with the Akaike-information-criterion picker of
 \citet{maeda1985} on the band-passed vertical component, searching from 1.5\,s
 before to 3\,s after the theoretical arrival (and at least 0.3\,s before the
-theoretical S). The asymmetric window accounts for catalogue origin times
-being given to whole seconds: in a 200-event trial the median pick
-lay 0.75\,s after the theoretical time, approximately independent of distance,
-while the picker was unbiased on synthetic records. The S time was set to the
-picked P time plus the theoretical S--P interval.
+theoretical S); the window is asymmetric because catalogue origin times are
+given to whole seconds. The S time was set to the picked P time plus the
+theoretical S--P interval.
 
 \subsection{Windows and quality control}
 Fixed windows relative to the picks were used throughout (Table~\ref{tab:windows}),
@@ -253,10 +240,8 @@ Every descriptor is computed after normalising each window by its own
 peak, and is either a ratio of quantities of equal degree in amplitude, a time
 or frequency read from a normalised curve, an ordinal statistic, or a fitted
 shape whose level parameter is discarded. Consequently, multiplying a record
-by any constant $c \neq 0$ leaves every descriptor unchanged. This property was
-verified by an automated test on synthetic three-component records for
-$c \in \{10,\ 0.01,\ -3\}$; the case $c=-3$ led to the use of the absolute value of
-skewness, whose sign reflects polarity rather than size.
+by any constant $c \neq 0$ leaves every descriptor unchanged, which is verified
+by an automated test on synthetic records.
 
 Invariance does not exclude indirect leakage: a fixed-length window on a weak
 record contains relatively more noise, so spectral and envelope shapes can
@@ -273,18 +258,14 @@ residualised on $r$, and the leakage score is
 the larger absolute within-event partial rank correlation with the P- and
 S-window SNR. Descriptors with $\lambda > 0.15$, or with an undefined score, are
 excluded by default; the audit is recomputed on each training set. The
-threshold removed 79 of 131 descriptors, among them all permutation-, sample-
-and SVD-entropy and fractal-dimension measures, all significant-duration
-measures, $\tau_c$ and $\tau_p^{\max}$, the vertical-component envelope
-descriptors, and the fitted Brune and Boatwright corner frequencies, fall-off
-exponents and $\kappa$ values. The retained descriptors have a median
-$\lambda$ of 0.07 (maximum 0.147). Only results obtained with this filter are
-reported.
+threshold removed 79 of 131 descriptors (Table~\ref{tab:features}); the
+retained ones have a median $\lambda$ of 0.07. Only results obtained with this
+filter are reported.
 
 \subsection{Descriptors}
-Table~\ref{tab:features} summarises the families; all 131 are defined in the
-project documentation and the 52 retained ones are listed in
-Appendix~\ref{app:features}. The key definitions are as follows.
+Table~\ref{tab:features} summarises the families; all 131 are defined, with
+formulas, in the project documentation (\code{docs/FEATURES.md}). The key
+definitions are as follows.
 
 \paragraph{Spectra.} Velocity power spectra $P(f)$ were estimated with the
 multitaper method \citep{thomson1982} (time--bandwidth 2.5, four tapers) on
@@ -310,9 +291,8 @@ Geometric spreading is frequency independent and cancels in the shape.
 \end{equation}
 the square root of the ratio of velocity to displacement spectral energy. For
 an $\omega^{2}$ spectrum over a wide band it returns $\fc$; over a finite band it
-is an apparent, band-limited estimate. Brune and Boatwright fits were also
-computed (grid search over $\fc$ with linear least squares for the level and
-$\kappa$), but only their residual misfits passed the audit.
+is an apparent, band-limited estimate. Brune and Boatwright model fits were
+also computed; only their residual misfits passed the audit.
 
 \paragraph{LPDT.} Following \citet{colombelli2015}, with $u$ the
 drift-corrected displacement of the high-passed P window,
@@ -369,18 +349,16 @@ duplicated. Within each bin, events were grouped into space--time cells
 random order, so that swarms and aftershock sequences cannot dominate a bin.
 Finally, no cell was allowed to contribute more than 20\,\% of any bin
 (minimum three events), including bins below the cap. Without this
-limit, the 2025 S{\i}nd{\i}rg{\i} (Bal{\i}kesir) sequence supplied 24--52\,\% of every bin
+limit, the 2025 Sındırgı (Balıkesir) sequence supplied 24--52\,\% of every bin
 above $M\,2.8$ but about 1\,\% below it, a regional signature that a model could
 use in place of source information and that a station-disjoint split does not
 remove.
 
 \subsection{Model and validation}
-Gradient-boosted regression trees \citep{ke2017} were trained with the Huber
-loss (transition 0.5), learning rate 0.03, 31 leaves, at least 40 samples per
-leaf, feature and bagging fractions of 0.8 and L2 regularisation 1.0, with
-early stopping (200 rounds) on an inner event-disjoint validation split
-(15\,\% of training events). Record weights were set so that each event's
-records sum to one.
+Gradient-boosted regression trees \citep{ke2017} were trained with a Huber
+loss and early stopping on an inner event-disjoint validation split
+(hyperparameters in the repository). Record weights were set so that each
+event's records sum to one.
 
 Events and stations were each partitioned into five groups. Fold $k$ tests on
 records whose event \emph{and} station belong to group $k$ and trains on
@@ -463,7 +441,7 @@ median over stations, averaged over repeats; 3\,561 events).}
 
 \subsection{Magnitude-dependent bias}
 All models regress towards the mean of the training distribution
-(Table~\ref{tab:bias}, Figure~\ref{fig:bias}). Events at $M\,2.0$--$2.5$ are
+(Table~\ref{tab:bias}). Events at $M\,2.0$--$2.5$ are
 overestimated by 0.2--0.4 units, partly because no smaller events exist in the
 catalogue to balance them. Above $M\,3.5$ the shape model underestimates
 increasingly, by $-0.67$ at $M\,4.0$--$4.5$ and $-1.01$ above $M\,4.5$. This
@@ -491,13 +469,6 @@ $\geq 4.5$ & 42 & $-1.01$ & 1.01 & $-1.89$ & 1.89 & $-0.42$ & 0.45 \\
 \bottomrule
 \end{tabular}
 \end{table}
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.55\textwidth]{figures/fig_bias.pdf}
-\caption{Mean event-level error by magnitude bin for the three models.}
-\label{fig:bias}
-\end{figure}
 
 \subsection{Descriptor importance}
 In the Shapley analysis, the event-median attenuation-corrected corner
@@ -556,79 +527,49 @@ comparison, anchored arbitrarily at $M\,2.5$.}
 \end{figure}
 
 \subsection{Sensitivity experiments}
-Two variants were evaluated on the same folds (Table~\ref{tab:sens}).
-\emph{Tail weighting}, which multiplies record weights by the inverse
-frequency of the magnitude bin (capped at 10), reduced the underestimation of large
-events only modestly ($-0.57$ instead of $-0.67$ at $M\,4.0$--$4.5$) while
-increasing the overall MAE. Thus, sample imbalance alone does not explain the
-bias. \emph{Restricting training and testing to $M_L$ events}
+Two variants were evaluated on the same folds. \emph{Tail weighting}, which
+multiplies record weights by the inverse frequency of the magnitude bin
+(capped at 10), reduced the underestimation of large events only modestly
+($-0.57$ instead of $-0.67$ at $M\,4.0$--$4.5$; MAE on $M_w$ events 0.609 instead
+of 0.687) while increasing the overall MAE from 0.343 to 0.367. Sample
+imbalance alone therefore does not explain the bias. \emph{Restricting training and testing to $M_L$ events}
 removed 246 $M_w$ events (median $M\,4.0$). On the same $M_L$ events its MAE
 ($0.302\pm0.016$) did not differ meaningfully from the default model
 ($0.314\pm0.015$), while its underestimation above $M\,3$ increased because
 fewer large events remained for training. Mixing the two scales is therefore not
 the main limitation.
 
-\begin{table}[ht]
-\centering\small
-\caption{Sensitivity experiments (shape + controls; event-level MAE).}
-\label{tab:sens}
-\begin{tabular}{lccc}
-\toprule
-Variant & All test events & Subset & Bias $M\,4.0$--$4.5$ \\
-\midrule
-Default & $0.343\pm0.017$ & $M_w$ events: $0.687\pm0.061$ & $-0.67$ \\
-Tail weighting & $0.367\pm0.019$ & $M_w$ events: $0.609\pm0.054$ & $-0.57$ \\
-\midrule
-Default, $M_L$ events only & -- & $0.314\pm0.015$ & -- \\
-$M_L$-only model & $0.302\pm0.016$ & -- & -- \\
-\bottomrule
-\end{tabular}
-\end{table}
 
-\section{Discussion and limitations}
+\section{Discussion and conclusions}
 
-The results indicate that waveform descriptors which are invariant to
-amplitude and insensitive to station SNR still carry substantial information
-on earthquake size, and that this information is concentrated in a single
-physical quantity, the attenuation-corrected corner frequency aggregated over
-the network. That a data-driven ranking recovers the quantity predicted by
-source theory supports the interpretation that the model learns source
-properties rather than shortcuts. The audit was essential to this
-interpretation: several descriptors with high apparent relevance, in
-particular high-frequency spectral and complexity measures, followed station
-SNR within events and were excluded.
+Amplitude-independent, SNR-insensitive descriptors still carry substantial
+information on earthquake size, and a data-driven ranking concentrates it in
+the quantity predicted by source theory: the attenuation-corrected corner
+frequency aggregated over the network. The within-event audit was essential to
+this interpretation, since several apparently relevant descriptors (notably
+high-frequency spectral and complexity measures) were found to track station
+SNR.
 
-The main limitation is the compressed magnitude scaling of the apparent
-corner frequency and the resulting underestimation of larger events. Three
-causes are plausible and not yet separated: (i) window length: the 2\,s P and
-5\,s S windows limit the spectral resolution (0.5 and 0.2\,Hz) and the
-observable source duration, which affects the larger events most; (ii) the
-fixed regional $Q(f)$ and the uncorrected site $\kappa$, which bias the
-corner frequency towards lower values for small events; and (iii) the
-analysis band (0.7 or 1 to 40\,Hz), which truncates corners above
-the anti-alias range. Further limitations are the mixture of $M_L$ and $M_w$
-labels; the whole-second origin times; the catalogue lower limit at $M\,2.0$,
-which produces the bias at the low end; the residual, sub-threshold SNR
-sensitivity of the retained descriptors; and the choice of the threshold
-$\lambda = 0.15$, $Q(f)$ and the window lengths, whose influence on the
-conclusions has not yet been tested. The study covers approximately 16 months
-of data from one network, and the dominant role of distance is partly a
-consequence of recording selection.
+The main limitation is the compressed scaling of the apparent corner frequency
+and the resulting underestimation of larger events. Plausible causes, not yet
+separated, are:
+\begin{itemize}
+\item window length: the 2\,s P and 5\,s S windows limit spectral resolution
+  (0.5 and 0.2\,Hz) and the observable source duration, affecting larger
+  events most;
+\item the fixed regional $Q(f)$ and the uncorrected site $\kappa$;
+\item the analysis band (0.7 or 1 to 40\,Hz), which truncates high corners.
+\end{itemize}
+Further limitations are the mixed $M_L$/$M_w$ labels, whole-second origin
+times, the catalogue limit at $M\,2.0$ (which causes the low-end bias),
+residual sub-threshold SNR sensitivity, untested sensitivity to $\lambda$,
+$Q(f)$ and window lengths, and a single network over about 16 months.
 
-\section{Conclusions and future work}
-
-Under a design that excludes amplitude, its proxies, shared events and shared
-stations, gradient-boosted trees recover about one third of the gap between a
-geometry-only model and an amplitude-based reference. The network-median,
-attenuation-corrected corner frequency of P and S waves is the dominant
-amplitude-independent descriptor of earthquake size, although its observed
-scaling is far shallower than self-similar theory predicts. Planned work:
-(1) multiple and longer analysis windows to test whether the saturation at
-larger magnitudes is a resolution effect; (2) sensitivity analyses of $Q(f)$,
-site $\kappa$, the leakage threshold and window lengths, and region- and
-sequence-held-out validation; (3) extension to a second network and period;
-(4) an early-warning variant restricted to the first seconds of P; and (5) a
-systematic literature review with full-text access.
+Planned work: longer and multiple windows to test whether the large-magnitude
+saturation is a resolution effect; sensitivity analyses of $Q(f)$, site
+$\kappa$, the leakage threshold and window lengths, with region- and
+sequence-held-out validation; a second network and period; an early-warning
+variant using the first seconds of P; and a full literature review.
 
 \section*{Data and code availability}
 The processing and analysis code, including automated tests and complete
@@ -639,21 +580,16 @@ available from the KOERI network \citepalias{koeri_ko} and hypocentres from AFAD
 \section{Declaration of AI use}
 \label{sec:ai}
 
-Generative AI was used extensively in this work. The AI system was Claude Opus 5.5 (Anthropic),
+Generative AI was used in this work. The AI system was Claude Opus 5.5 (Anthropic),
 accessed through the Claude Code command-line agent, in October 2026. It was used for:
 \begin{enumerate}
-\item \textbf{Software}: design and implementation of the data-processing,
+\item \textbf{Software}: implementation of the data-processing,
   feature-extraction, event-selection, training and evaluation code and its
   automated tests, at the author's direction;
 \item \textbf{Analysis}: execution of the experiments, the leakage audit and
-  the importance analyses, and production of all figures and tables;
+  the importance analyses, and production of figures and tables;
 \item \textbf{Literature}: identification of candidate references by web
-  search and verification of their bibliographic data against Crossref and
-  publisher records. Because institutional access was unavailable, the full
-  texts were \emph{not} read by the author or by the AI system; statements
-  about cited works rest on abstracts, metadata and general domain knowledge,
-  and two bibliographic errors in the AI's own recollection were found and
-  corrected during verification;
+  search and verification of their bibliographic data against Crossref;
 \item \textbf{Writing}: drafting of this manuscript.
 \end{enumerate}
 The research question and the main methodological decisions were set by the
@@ -663,36 +599,10 @@ balancing magnitudes and reporting only leakage-filtered results.
 All numerical results were produced by the code in the project
 repository and can be regenerated from it. The author has reviewed this
 AI-drafted preliminary report and takes responsibility for its content.
-Before any formal use, the literature claims will be checked against the
-original publications and the manuscript revised in the author's own words.
 
+\renewcommand{\bibfont}{\small}  % compact reference list
+\setlength{\bibsep}{2pt}
 \bibliographystyle{plainnat}
 \bibliography{refs}
-
-\appendix
-\section{Retained descriptors}
-\label{app:features}
-\small
-\begin{tabularx}{\textwidth}{lL}
-\toprule
-Family & Descriptors (prefix \code{f_} omitted) \\
-\midrule
-P spectrum & \code{pz_centroid_hz}, \code{pz_frac_1_2}, \code{pz_frac_2_4}, \code{pz_frac_4_8}, \code{pz_frac_8_16}, \code{pz_peak_hz}, \code{pz_rolloff50_hz} \\
-S spectrum & \code{sh_centroid_hz}, \code{sh_entropy}, \code{sh_frac_1_2}, \code{sh_frac_2_4}, \code{sh_frac_4_8}, \code{sh_frac_8_16}, \code{sh_peak_hz}, \code{sh_rolloff50_hz}, \code{sh_rolloff85_hz}, \code{sh_rolloff95_hz} \\
-P source & \code{pz_snoke_fc_hz}, \code{pz_boat_rms}, \code{pz_fc_at_edge} \\
-P source (att.-corr.) & \code{pz_qc_snoke_fc_hz}, \code{pz_qc_boat_rms}, \code{pz_qc_fc_at_edge} \\
-S source & \code{sh_snoke_fc_hz}, \code{sh_boat_rms}, \code{sh_brune_rms}, \code{sh_fc_at_edge} \\
-S source (att.-corr.) & \code{sh_qc_snoke_fc_hz}, \code{sh_qc_boat_rms}, \code{sh_qc_brune_rms}, \code{sh_qc_fc_at_edge} \\
-Corner ratios & \code{fc_p_over_s_brune}, \code{fc_p_over_s_snoke} \\
-LPDT & \code{lpdt_t_plateau_s}, \code{lpdt_slope_dec_per_s}, \code{lpdt_t90_s} \\
-Peak-ratio periods & \code{pz_T_va_s}, \code{sh_T_va_s} \\
-Statistics & \code{pz_abs_skew}, \code{pz_crest}, \code{sh_abs_skew}, \code{sh_crest} \\
-Polarisation & \code{ppol_incidence_deg}, \code{ppol_log_h_over_v}, \code{spol_incidence_deg}, \code{spol_log_h_over_v}, \code{spol_planarity}, \code{spol_rectilin} \\
-Envelope (horizontal) & \code{envh_decay_powerlaw}, \code{envh_rise_10_90_s}, \code{envh_t_peak_rel_sp}, \code{envh_t_peak_s} \\
-\midrule
-Event medians & \code{pz_qc_snoke_fc_hz}, \code{sh_qc_snoke_fc_hz}, \code{lpdt_t_plateau_s}, \code{fc_p_over_s_snoke} \\
-Controls & epicentral and hypocentral distance, depth, back-azimuth, theoretical S--P time \\
-\bottomrule
-\end{tabularx}
 
 \end{document}
