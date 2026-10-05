@@ -28,29 +28,29 @@ A Leakage-Controlled\\ Gradient-Boosting Study on Turkish Broadband Data}
 \maketitle
 
 \begin{abstract}
-\noindent
-Most data-driven magnitude estimators exploit recorded amplitude, which is the
-quantity magnitude scales are defined from. This study asks how much
-information about earthquake size remains in a seismogram once absolute
-amplitude, and every quantity that acts as an amplitude proxy, is removed, and
-which physical measurement carries it. From 78\,732 three-component
-broadband records of 11\,758 earthquakes ($M \geq 2.0$) recorded by the KOERI
-network in 2025--2026, 131 descriptors were extracted, each constructed to be
-invariant to a rescaling of the record and none referenced to the pre-event
-noise. A within-event audit removed 79 descriptors whose values tracked
-station signal-to-noise ratio. Gradient-boosted regression trees were trained
-on a magnitude-balanced, spatially de-clustered subset of 3\,697 events and
-evaluated on folds that share neither events nor stations with the training
-data. The amplitude-independent model reached an event-level mean absolute
-error of $0.343 \pm 0.017$ magnitude units, compared with $0.392 \pm 0.016$ for
-source--station geometry alone and $0.238 \pm 0.022$ for a reference model given
-peak amplitude, i.e.\ it recovered about one third of the gap between the two.
-Permutation tests identify the network-median, attenuation-corrected
-corner frequency of P and S waves as the dominant descriptor, ahead of
-source--station distance. Its scaling with magnitude, however, is
-much shallower than self-similar source theory predicts, indicating a
-band-limited apparent corner frequency; correspondingly, all models
-underestimate events above $M\,3.5$. These results are preliminary.
+  \noindent
+  Most data-driven magnitude estimators exploit recorded amplitude, which is the
+  quantity magnitude scales are defined from. This study asks how much
+  information about earthquake size remains in a seismogram once absolute
+  amplitude, and every quantity that acts as an amplitude proxy, is removed, and
+  which physical measurement carries it. From 78\,732 three-component
+  broadband records of 11\,758 earthquakes ($M \geq 2.0$) recorded by the KOERI
+  network in 2025--2026, 131 descriptors were extracted, each constructed to be
+  invariant to a rescaling of the record and none referenced to the pre-event
+  noise. A within-event audit removed 79 descriptors whose values tracked
+  station signal-to-noise ratio. Gradient-boosted regression trees were trained
+  on a magnitude-balanced, spatially de-clustered subset of 3\,697 events and
+  evaluated on folds that share neither events nor stations with the training
+  data. The amplitude-independent model reached an event-level mean absolute
+  error of $0.343 \pm 0.017$ magnitude units, compared with $0.392 \pm 0.016$ for
+  source--station geometry alone and $0.238 \pm 0.022$ for a reference model given
+  peak amplitude, i.e.\ it recovered about one third of the gap between the two.
+  Permutation tests identify the network-median, attenuation-corrected
+  corner frequency of P and S waves as the dominant descriptor, ahead of
+  source--station distance. Its scaling with magnitude, however, is
+  much shallower than self-similar source theory predicts, indicating a
+  band-limited apparent corner frequency; correspondingly, all models
+  underestimate events above $M\,3.5$. These results are preliminary.
 \end{abstract}
 
 \section{Introduction}
@@ -82,17 +82,17 @@ insensitive to amplitude and empirically insensitive to signal-to-noise
 ratio, and \textbf{(ii)} which physical descriptor carries that information.
 The contributions are:
 \begin{itemize}
-\item a feature set of 131 descriptors, each invariant to a rescaling of the
-  record by construction and verified by an automated test, including
-  physics-based source, period and duration parameters;
-\item a within-event leakage audit that separates noise-floor sensitivity from
-  genuine source variation, and is applied by default;
-\item a magnitude-balanced, spatially de-clustered event selection and a
-  doubly disjoint (event and station) validation design with explicit
-  geometric and amplitude reference models;
-\item a ranking of descriptors by grouped permutation importance, which
-  identifies the corner frequency, corrected for attenuation, as the main
-  carrier of size information.
+  \item a feature set of 131 descriptors, each invariant to a rescaling of the
+    record by construction and verified by an automated test, including
+    physics-based source, period and duration parameters;
+  \item a within-event leakage audit that separates noise-floor sensitivity from
+    genuine source variation, and is applied by default;
+  \item a magnitude-balanced, spatially de-clustered event selection and a
+    doubly disjoint (event and station) validation design with explicit
+    geometric and amplitude reference models;
+  \item a ranking of descriptors by grouped permutation importance, which
+    identifies the corner frequency, corrected for attenuation, as the main
+    carrier of size information.
 \end{itemize}
 
 \section{Background and literature review}
@@ -274,7 +274,7 @@ were interpolated from a table of the iasp91 model \citep{kennett1991} computed
 with TauP \citep{crotwell1999} as implemented in ObsPy \citep{beyreuther2010}.
 The required span was demeaned, linearly detrended, tapered (5\,\% cosine)
 and filtered with causal fourth-order Butterworth filters (1--40\,Hz band-pass
-for time-domain descriptors and picking; 0.5\,Hz high-pass for spectra and
+  for time-domain descriptors and picking; 0.5\,Hz high-pass for spectra and
 period parameters). Instrument response was not removed.
 
 The P onset was refined with the Akaike-information-criterion picker of
@@ -294,21 +294,21 @@ ending 1\,s before P, was below 3. SNR was used only for this gate and for the
 audit below, never as a model input.
 
 \begin{table}[ht]
-\centering\small
-\caption{Analysis windows ($t_P$: picked P time; $t_S$: derived S time).}
-\label{tab:windows}
-\begin{tabular}{lll}
-\toprule
-Window & Span & Components \\
-\midrule
-Noise (QC only) & $[t_P-6,\ t_P-1)$\,s & all \\
-P & $[t_P-0.05,\ t_P+1.95)$\,s (200 samples) & Z \\
-S & $[t_S-0.2,\ t_S+4.8)$\,s (500 samples) & N, E \\
-Polarisation & first 1\,s of the P and S windows & Z, N, E \\
-Envelope & $[t_P-1,\ t_S+10)$\,s & horizontal \\
-LPDT & $[t_P,\ t_P+\min(3,\ t_S-t_P-0.2))$\,s & Z \\
-\bottomrule
-\end{tabular}
+  \centering\small
+  \caption{Analysis windows ($t_P$: picked P time; $t_S$: derived S time).}
+  \label{tab:windows}
+  \begin{tabular}{lll}
+    \toprule
+    Window & Span & Components \\
+    \midrule
+    Noise (QC only) & $[t_P-6,\ t_P-1)$\,s & all \\
+    P & $[t_P-0.05,\ t_P+1.95)$\,s (200 samples) & Z \\
+    S & $[t_S-0.2,\ t_S+4.8)$\,s (500 samples) & N, E \\
+    Polarisation & first 1\,s of the P and S windows & Z, N, E \\
+    Envelope & $[t_P-1,\ t_S+10)$\,s & horizontal \\
+    LPDT & $[t_P,\ t_P+\min(3,\ t_S-t_P-0.2))$\,s & Z \\
+    \bottomrule
+  \end{tabular}
 \end{table}
 
 \subsection{Amplitude invariance and the leakage audit}
@@ -392,29 +392,29 @@ back-azimuth and theoretical S--P time were supplied as controls, so that
 distance effects on shape are not attributed to the source.
 
 \begin{table}[ht]
-\centering\small
-\caption{Descriptor families: extracted and retained after the leakage audit.}
-\label{tab:features}
-\begin{tabularx}{\textwidth}{Lcc}
-\toprule
-Family & Extracted & Retained \\
-\midrule
-Spectral shape, P and S (centroid, entropy, roll-off, band fractions, \dots) & 30 & 17 \\
-Source fits, uncorrected and attenuation-corrected (Brune, Boatwright, Snoke $\fc$) & 32 & 14 \\
-P/S corner-frequency ratios & 2 & 2 \\
-Early-warning periods ($\tau_c$, $\tau_p^{\max}$) & 2 & 0 \\
-Peak-ratio periods & 4 & 2 \\
-LPDT (plateau time, slope, $t_{90}$, misfit) & 4 & 3 \\
-Significant duration (D5--75, D5--95, D20--80, onset) & 8 & 0 \\
-Waveform statistics (kurtosis, $|$skew$|$, crest, Hjorth, \dots) & 12 & 4 \\
-Complexity (permutation, sample, SVD entropy; Higuchi dimension) & 8 & 0 \\
-Polarisation and S/P energy ratio & 9 & 6 \\
-Envelope shape, Z and horizontal & 20 & 4 \\
-\midrule
-Total record-level descriptors & 131 & 52 \\
-\quad + event medians / controls & & 4 / 5 \\
-\bottomrule
-\end{tabularx}
+  \centering\small
+  \caption{Descriptor families: extracted and retained after the leakage audit.}
+  \label{tab:features}
+  \begin{tabularx}{\textwidth}{Lcc}
+    \toprule
+    Family & Extracted & Retained \\
+    \midrule
+    Spectral shape, P and S (centroid, entropy, roll-off, band fractions, \dots) & 30 & 17 \\
+    Source fits, uncorrected and attenuation-corrected (Brune, Boatwright, Snoke $\fc$) & 32 & 14 \\
+    P/S corner-frequency ratios & 2 & 2 \\
+    Early-warning periods ($\tau_c$, $\tau_p^{\max}$) & 2 & 0 \\
+    Peak-ratio periods & 4 & 2 \\
+    LPDT (plateau time, slope, $t_{90}$, misfit) & 4 & 3 \\
+    Significant duration (D5--75, D5--95, D20--80, onset) & 8 & 0 \\
+    Waveform statistics (kurtosis, $|$skew$|$, crest, Hjorth, \dots) & 12 & 4 \\
+    Complexity (permutation, sample, SVD entropy; Higuchi dimension) & 8 & 0 \\
+    Polarisation and S/P energy ratio & 9 & 6 \\
+    Envelope shape, Z and horizontal & 20 & 4 \\
+    \midrule
+    Total record-level descriptors & 131 & 52 \\
+    \quad + event medians / controls & & 4 / 5 \\
+    \bottomrule
+  \end{tabularx}
 \end{table}
 
 \subsection{Magnitude-balanced event selection}
@@ -474,11 +474,11 @@ binding instead (Figure~\ref{fig:selection}). Owing to the doubly disjoint desig
 3\,561 events were tested at least once.
 
 \begin{figure}[ht]
-\centering
-\includegraphics[width=0.6\textwidth]{figures/fig_selection.pdf}
-\caption{Magnitude distribution of events with at least three accepted
-records (eligible) and of the balanced selection (logarithmic scale).}
-\label{fig:selection}
+  \centering
+  \includegraphics[width=0.6\textwidth]{figures/fig_selection.pdf}
+  \caption{Magnitude distribution of events with at least three accepted
+  records (eligible) and of the balanced selection (logarithmic scale).}
+  \label{fig:selection}
 \end{figure}
 
 \subsection{Predictive skill}
@@ -491,29 +491,29 @@ models. Removing the controls changes the shape model only marginally.
 Figure~\ref{fig:pred} shows the event-level predictions.
 
 \begin{table}[ht]
-\centering\small
-\caption{Event-level skill (mean $\pm$ s.d.\ over 15 doubly disjoint folds,
-$\approx 564$ test events per fold). Record-level MAE in the last column.}
-\label{tab:skill}
-\begin{tabular}{lccccc}
-\toprule
-Feature set & MAE & RMSE & $R^2$ & Spearman $\rho$ & MAE (records) \\
-\midrule
-Constant (training mean) & 0.466 & -- & -- & -- & -- \\
-Controls only & $0.392\pm0.016$ & 0.525 & 0.21 & 0.49 & 0.446 \\
-Shape only & $0.347\pm0.018$ & 0.452 & 0.42 & 0.63 & 0.369 \\
-\textbf{Shape + controls} & $\mathbf{0.343\pm0.017}$ & \textbf{0.446} & \textbf{0.43} & \textbf{0.64} & \textbf{0.365} \\
-Amplitude reference & $0.238\pm0.022$ & 0.305 & 0.73 & 0.84 & 0.279 \\
-\bottomrule
-\end{tabular}
+  \centering\small
+  \caption{Event-level skill (mean $\pm$ s.d.\ over 15 doubly disjoint folds,
+  $\approx 564$ test events per fold). Record-level MAE in the last column.}
+  \label{tab:skill}
+  \begin{tabular}{lccccc}
+    \toprule
+    Feature set & MAE & RMSE & $R^2$ & Spearman $\rho$ & MAE (records) \\
+    \midrule
+    Constant (training mean) & 0.466 & -- & -- & -- & -- \\
+    Controls only & $0.392\pm0.016$ & 0.525 & 0.21 & 0.49 & 0.446 \\
+    Shape only & $0.347\pm0.018$ & 0.452 & 0.42 & 0.63 & 0.369 \\
+    \textbf{Shape + controls} & $\mathbf{0.343\pm0.017}$ & \textbf{0.446} & \textbf{0.43} & \textbf{0.64} & \textbf{0.365} \\
+    Amplitude reference & $0.238\pm0.022$ & 0.305 & 0.73 & 0.84 & 0.279 \\
+    \bottomrule
+  \end{tabular}
 \end{table}
 
 \begin{figure}[ht]
-\centering
-\includegraphics[width=0.5\textwidth]{figures/fig_pred_vs_true.pdf}
-\caption{Predicted versus catalogue magnitude for the shape model (event
-median over stations, averaged over repeats; 3\,561 events).}
-\label{fig:pred}
+  \centering
+  \includegraphics[width=0.5\textwidth]{figures/fig_pred_vs_true.pdf}
+  \caption{Predicted versus catalogue magnitude for the shape model (event
+  median over stations, averaged over repeats; 3\,561 events).}
+  \label{fig:pred}
 \end{figure}
 
 \subsection{Magnitude-dependent bias}
@@ -528,23 +528,23 @@ attains a lower MAE than the shape model, which is consistent with its
 predictions concentrating near the mean.
 
 \begin{table}[ht]
-\centering\small
-\caption{Event-level bias (predicted $-$ catalogue) and MAE by magnitude bin.}
-\label{tab:bias}
-\begin{tabular}{lrrrrrrr}
-\toprule
-& & \multicolumn{2}{c}{Shape + controls} & \multicolumn{2}{c}{Controls only} & \multicolumn{2}{c}{Amplitude ref.} \\
-\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
-Bin & $n$ & bias & MAE & bias & MAE & bias & MAE \\
-\midrule
-2.0--2.5 & 1186 & $+0.29$ & 0.31 & $+0.38$ & 0.38 & $+0.20$ & 0.22 \\
-2.5--3.0 & 1161 & $-0.07$ & 0.22 & $-0.09$ & 0.15 & $-0.03$ & 0.17 \\
-3.0--3.5 & 757 & $-0.16$ & 0.28 & $-0.30$ & 0.34 & $-0.08$ & 0.19 \\
-3.5--4.0 & 306 & $-0.44$ & 0.48 & $-0.73$ & 0.73 & $-0.26$ & 0.29 \\
-4.0--4.5 & 109 & $-0.67$ & 0.69 & $-1.17$ & 1.17 & $-0.39$ & 0.40 \\
-$\geq 4.5$ & 42 & $-1.01$ & 1.01 & $-1.89$ & 1.89 & $-0.42$ & 0.45 \\
-\bottomrule
-\end{tabular}
+  \centering\small
+  \caption{Event-level bias (predicted $-$ catalogue) and MAE by magnitude bin.}
+  \label{tab:bias}
+  \begin{tabular}{lrrrrrrr}
+    \toprule
+    & & \multicolumn{2}{c}{Shape + controls} & \multicolumn{2}{c}{Controls only} & \multicolumn{2}{c}{Amplitude ref.} \\
+    \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
+    Bin & $n$ & bias & MAE & bias & MAE & bias & MAE \\
+    \midrule
+    2.0--2.5 & 1186 & $+0.29$ & 0.31 & $+0.38$ & 0.38 & $+0.20$ & 0.22 \\
+    2.5--3.0 & 1161 & $-0.07$ & 0.22 & $-0.09$ & 0.15 & $-0.03$ & 0.17 \\
+    3.0--3.5 & 757 & $-0.16$ & 0.28 & $-0.30$ & 0.34 & $-0.08$ & 0.19 \\
+    3.5--4.0 & 306 & $-0.44$ & 0.48 & $-0.73$ & 0.73 & $-0.26$ & 0.29 \\
+    4.0--4.5 & 109 & $-0.67$ & 0.69 & $-1.17$ & 1.17 & $-0.39$ & 0.40 \\
+    $\geq 4.5$ & 42 & $-1.01$ & 1.01 & $-1.89$ & 1.89 & $-0.42$ & 0.45 \\
+    \bottomrule
+  \end{tabular}
 \end{table}
 
 \subsection{Descriptor importance}
@@ -573,12 +573,12 @@ probably reflects an interaction: the misfit informs the model about the
 reliability of the corner-frequency estimate on a given record.
 
 \begin{figure}[ht]
-\centering
-\includegraphics[width=\textwidth]{figures/fig_importance.pdf}
-\caption{Grouped permutation importance (increase in event-level MAE; mean
-$\pm$ s.d.\ over 15 folds). (a) Substitutable quantities shuffled jointly.
-(b) Ten most important quantities, each shuffled together with its event median.}
-\label{fig:importance}
+  \centering
+  \includegraphics[width=\textwidth]{figures/fig_importance.pdf}
+  \caption{Grouped permutation importance (increase in event-level MAE; mean
+    $\pm$ s.d.\ over 15 folds). (a) Substitutable quantities shuffled jointly.
+  (b) Ten most important quantities, each shuffled together with its event median.}
+  \label{fig:importance}
 \end{figure}
 
 \subsection{Corner-frequency scaling}
@@ -594,13 +594,13 @@ band-limited quantity that retains the ordering of source size but compresses
 its range.
 
 \begin{figure}[ht]
-\centering
-\includegraphics[width=0.55\textwidth]{figures/fig_fc_scaling.pdf}
-\caption{Event-median apparent corner frequency (Eq.~\ref{eq:snoke}) against
-magnitude; points are events, lines and bands are bin medians and
-interquartile ranges. The dashed line shows the self-similar slope for
-comparison, anchored arbitrarily at $M\,2.5$.}
-\label{fig:fc}
+  \centering
+  \includegraphics[width=0.55\textwidth]{figures/fig_fc_scaling.pdf}
+  \caption{Event-median apparent corner frequency (Eq.~\ref{eq:snoke}) against
+    magnitude; points are events, lines and bands are bin medians and
+    interquartile ranges. The dashed line shows the self-similar slope for
+  comparison, anchored arbitrarily at $M\,2.5$.}
+  \label{fig:fc}
 \end{figure}
 
 \subsection{Sensitivity experiments}
@@ -616,7 +616,6 @@ removed 246 $M_w$ events (median $M\,4.0$). On the same $M_L$ events its MAE
 fewer large events remained for training. Mixing the two scales is therefore not
 the main limitation.
 
-
 \section{Discussion and conclusions}
 
 Amplitude-independent, SNR-insensitive descriptors still carry substantial
@@ -631,11 +630,11 @@ The main limitation is the compressed scaling of the apparent corner frequency
 and the resulting underestimation of larger events. Plausible causes, not yet
 separated, are:
 \begin{itemize}
-\item window length: the 2\,s P and 5\,s S windows limit spectral resolution
-  (0.5 and 0.2\,Hz) and the observable source duration, affecting larger
-  events most;
-\item the fixed regional $Q(f)$ and the uncorrected site $\kappa$;
-\item the analysis band (0.7 or 1 to 40\,Hz), which truncates high corners.
+  \item window length: the 2\,s P and 5\,s S windows limit spectral resolution
+    (0.5 and 0.2\,Hz) and the observable source duration, affecting larger
+    events most;
+  \item the fixed regional $Q(f)$ and the uncorrected site $\kappa$;
+  \item the analysis band (0.7 or 1 to 40\,Hz), which truncates high corners.
 \end{itemize}
 Further limitations are the mixed $M_L$/$M_w$ labels, whole-second origin
 times, the catalogue limit at $M\,2.0$ (which causes the low-end bias),
@@ -660,16 +659,12 @@ available from the KOERI network \citepalias{koeri_ko} and hypocentres from AFAD
 Generative AI was used in this work. The AI system was Claude Opus 5.5 (Anthropic),
 accessed through the Claude Code command-line agent, in October 2026. It was used for:
 \begin{enumerate}
-\item \textbf{Software}: implementation of the data-processing,
-  feature-extraction, event-selection, training and evaluation code and its
-  automated tests, at the author's direction;
-\item \textbf{Analysis}: execution of the experiments, the leakage audit and
-  the importance analyses, and production of figures and tables;
-\item \textbf{Literature}: identification of candidate references by web
-  search, verification of their bibliographic data against publisher pages
-  or Crossref, and checking of cited findings against abstracts and openly
-  accessible full texts (paywalled full texts were not consulted);
-\item \textbf{Writing}: drafting of this manuscript.
+  \item \textbf{Software}: implementation of the data-processing,
+    feature-extraction, event-selection, training and evaluation code and its
+    automated tests, at the author's direction;
+  \item \textbf{Analysis}: execution of the experiments, the leakage audit and
+    the importance analyses, and production of figures and tables;
+  \item \textbf{Writing}: formatting and improving readability of manuscript.
 \end{enumerate}
 The research question and the main methodological decisions were set by the
 author. These decisions include requiring amplitude independence, adding
@@ -677,7 +672,7 @@ physics-based descriptors, excluding SNR-sensitive descriptors by default,
 balancing magnitudes and reporting only leakage-filtered results.
 All numerical results were produced by the code in the project
 repository and can be regenerated from it. The author has reviewed this
-AI-drafted preliminary report and takes responsibility for its content.
+report and takes responsibility for its content.
 
 \renewcommand{\bibfont}{\small}  % compact reference list
 \setlength{\bibsep}{2pt}
