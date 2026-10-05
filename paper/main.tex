@@ -98,80 +98,159 @@ The contributions are:
 \section{Background and literature review}
 \label{sec:lit}
 
-\subsection{Magnitude scales and source scaling}
-Moment magnitude is tied to the static seismic moment \citep{hanks1979}.
-Local magnitude, by contrast, is a dynamic, high-frequency measure;
-\citet{deichmann2006} showed theoretically that the two scales diverge for
-small earthquakes, whose corner frequencies lie above the passband of the
-Wood--Anderson response. Since the AFAD catalogue reports $M_L$ for most
-events in this study and $M_w$ for larger ones, the target variable is a mixture
-of the two scales. In the $\omega^{2}$ source model \citep{brune1970} the
-displacement spectrum is flat below the corner frequency $\fc$ and decays as
-$f^{-2}$ above it. Under constant stress drop (self-similarity),
+\subsection{Magnitude scales and the catalogue target}
+Moment magnitude is tied to the static seismic moment, i.e.\ the
+low-frequency level of the displacement spectrum \citep{hanks1979}. Local
+magnitude is a dynamic measure read from the peak of a simulated
+Wood--Anderson record. For small earthquakes the two diverge:
+\citet{deichmann2006} showed that $M_L$ and $M_w$ coincide only while the
+source spectrum is flat across the Wood--Anderson passband, and
+\citet{deichmann2017} showed that the commonly observed slope of about 1.5
+between $M_L$ and $M_w$ at small magnitudes follows from the scaling of
+source duration with moment combined with anelastic attenuation. In
+Turkey, AFAD has used the local-magnitude scale of \citet{kilic2017} since
+2013, reporting $M_w$ for larger events. For events of $M \geq 4$,
+\citet{rojolimon2023} found AFAD and KOERI local magnitudes to agree within
+0.1 units in the median, with station corrections spanning roughly
+$\pm 0.5$ units; no comparable check exists for the $M\,2$--3 events that
+dominate this study. The target variable here is therefore a mixture of
+$M_L$ and $M_w$, and for most events it is a scale whose relation to source
+size is itself magnitude dependent.
+
+\subsection{Source spectra and corner-frequency scaling}
+In the $\omega^{2}$ model \citep{brune1970} the displacement spectrum is flat
+below the corner frequency $\fc$ and decays as $f^{-2}$ above it; the
+generalised fall-off model of \citet{boatwright1980} relaxes the sharpness
+and decay rate. Under constant stress drop (self-similarity),
 $M_0 \propto \fc^{-3}$, i.e.\ $\log_{10}\fc$ decreases by $0.5$ per unit $M_w$.
-Self-similarity of small earthquakes has been supported by borehole
-recordings down to very small magnitudes \citep{abercrombie1995} and by
-stacked P and S spectra of southern California earthquakes
-\citep{prieto2004}, although the question remains debated.
+Borehole recordings down to very small magnitudes \citep{abercrombie1995}
+and stacked P and S spectra of southern California earthquakes
+\citep{prieto2004} were found broadly consistent with self-similarity.
+Apparent departures from it have repeatedly been traced to band limitation:
+\citet{ide2001} showed that a finite recording band truncates radiated
+energy and can by itself produce a size-dependent trend in source
+parameters. \citet{abercrombie2021} reviewed the resolution of stress-drop
+and corner-frequency estimates for earthquakes below about $M\,5$--6 and
+concluded that random and systematic uncertainties remain large enough
+that self-similarity is not settled. Dynamic rupture models predict P
+corner frequencies systematically higher than S corner frequencies
+\citep{kaneko2014}, which motivates using both phases and their ratio.
 
-\subsection{Spectral source parameters and attenuation}
-Observed spectra combine source, path and site. High-frequency decay near the
-receiver is commonly modelled by the parameter $\kappa$ \citep{anderson1984};
-for the Marmara region, \citet{sertcelik2022} reported a dependence of
-$\kappa$ on magnitude, which illustrates how strongly source and attenuation
-effects are coupled. Parametric source fits include the Brune model and the
-generalised fall-off model of \citet{boatwright1980}. A non-parametric
-alternative replaces the fitted corner by the ratio of spectral integrals of
-velocity and displacement \citep{andrews1986,snoke1987}, which is more stable
-for band-limited data. Frequency-dependent attenuation in Anatolia is strong:
-$Q_S \approx 40 f^{1.03}$ was reported for the Sea of Marmara
-\citep{horasan2004}, and coda $Q_c \approx 57.5 f^{0.82}$ for the East Anatolian
-Fault Zone \citep{sertcelik2012}. At magnitudes 2--3 the expected corner
-frequencies (of order 10\,Hz or more) fall in the band where such attenuation
-removes most energy over typical regional distances.
+A non-parametric alternative to model fitting replaces the corner by the
+ratio of spectral integrals of velocity and displacement
+\citep{andrews1986,snoke1987}, which is more stable on band-limited data
+but, for the same reason, inherits the band limits. In the Marmara region,
+\citet{chen2025} estimated source parameters for about 1\,550 events with
+$M_L$ 1.0--5.7 by both spectral fitting and non-parametric spectral
+decomposition and found the two consistent mainly in \emph{relative}
+differences between events, which is the property a shape-based size
+estimator depends on.
 
-\subsection{Period and duration parameters from early warning}
+\subsection{Path and site effects in Anatolia}
+Observed spectra combine source, path and site, and the trade-off between
+them is the main obstacle to measuring $\fc$ for small events.
+\citet{abercrombie2021depth} showed that an apparent increase of stress drop
+with depth can arise from attenuation that is not fully corrected, i.e.\
+uncorrected path effects bias corner frequencies directly. Attenuation in
+Anatolia is strong and spatially variable. In the Sea of Marmara,
+\citet{horasan2004} obtained an average $Q_S \approx 40 f^{1.03}$ from five
+sub-regions whose $Q_0$ ranged from about 13 to 94. In western Turkey,
+\citet{kurtulmus2013} found $Q_S \approx 190 f^{0.64}$ over 10--200\,km, but
+$Q_0 \approx 60$ with a frequency exponent near 1.4 over 10--70\,km, which
+they attributed to scattering in a fractured, geothermally active crust.
+Coda $Q_c \approx 57.5 f^{0.82}$ was reported for the East Anatolian Fault
+Zone \citep{sertcelik2012}. A single regional $Q(f)$ is therefore a coarse
+approximation whose error depends on path length and region.
+Near-receiver high-frequency decay is commonly described by $\kappa$
+\citep{anderson1984}; for 161 AFAD strong-motion stations in the Marmara
+region, \citet{sertcelik2022} reported a linear dependence of $\kappa$ on
+$M_L$, which illustrates how source and site effects are entangled in the
+high-frequency spectrum. At $M\,2$--3 the expected corner frequencies (of
+order 10\,Hz or more) fall in the band where these effects remove most
+energy over regional distances.
+
+\subsection{Amplitude-free measures of earthquake size}
+Several established size measures do not use absolute amplitude.
+Duration magnitude relates the logarithm of signal duration to magnitude,
+and \citet{herrmann1975} explained this relation through the shape of the
+coda envelope and showed that it deviates from linearity because of
+instrument response and the shift of the corner frequency with event size.
+Because duration is measured until the signal returns to the noise level,
+it is not free of recording conditions: \citet{michaelson1990} needed
+corrections for instrument gain setting and site to reduce station
+scatter of up to 0.5 units. Duration magnitude is thus a historical
+example of the indirect leakage that the audit in Section~\ref{sec:invariance}
+targets.
+
 Earthquake early warning estimates size from the first seconds of P. The
 recursive predominant period $\tau_p^{\max}$ \citep{allen2003} and the
 effective period $\tau_c$ \citep{kanamori2005,wu2005} are ratios of signal
-moments and therefore independent of amplitude; \citet{olson2005} argued from
-such observations that final size is partly determined early in the rupture.
-\citet{colombelli2015} showed that the logarithm of peak P displacement as a
-function of time (LPDT) grows and then levels off, and related the corner
-time of this curve to the rupture half-duration. Significant duration, the
-interval over which normalised cumulative energy grows from 5 to 95\,\%
-\citep{trifunac1975}, is likewise amplitude-free, and modern duration models
-parameterise its magnitude dependence through source duration
+moments and therefore independent of amplitude; \citet{olson2005} argued
+from such observations that final size is partly determined early in the
+rupture. Their behaviour at small magnitude is poor:
+\citet{kuyuk2013} found that $\tau_p^{\max}$ does not scale with magnitude
+below $M\,3$, which they attributed to real-time filtering, and concluded
+that peak displacement alone gives more robust estimates.
+\citet{colombelli2015} showed that the logarithm of peak P displacement as
+a function of time (LPDT) grows and then levels off, and related the
+corner time of the curve to the rupture half-duration. Significant
+duration, the interval over which normalised cumulative energy grows from
+5 to 95\,\% \citep{trifunac1975}, is likewise amplitude-free, and duration
+models parameterise its magnitude dependence through source duration
 \citep{afshari2016}.
 
 \subsection{Machine-learning magnitude estimation}
-Deep networks trained on single-station waveforms estimate local magnitude
-with small error \citep{mousavi2020,lomax2019}, and multi-station transformer
-models have been developed for early warning \citep{munchmeyer2021}; see
-\citet{mousavi2023} for a review. These models are designed to use amplitude
-and are not intended to separate it from other information. Gradient-boosted
-decision trees \citep{ke2017} on engineered features offer a transparent
-alternative, for which exact tree-based Shapley values \citep{lundberg2020} and
-permutation importance \citep{breiman2001} are available; for correlated
-features, conditional or grouped schemes are preferable
-\citep{strobl2008}.
+Deep networks trained on single-station waveforms estimate magnitude with
+small error \citep{mousavi2020,lomax2019}; see \citet{mousavi2023} for a
+review. A recurring design question is how to treat amplitude. Networks
+that normalise their input lose the absolute level, so
+\citet{munchmeyer2021b} divided each waveform by its peak and supplied the
+logarithm of the peak as a separate input, and noted a systematic
+underestimation of large events \citep[see also][]{munchmeyer2021}.
+\citet{zhang2026} made the decomposition explicit: a network sees only the
+peak-normalised waveform and predicts the magnitude minus the logarithm of
+peak amplitude, which is added back afterwards, building on the
+``relative magnitude'' idea of \citet{zhang2024}. These architectures
+separate shape from amplitude technically, but they are designed to
+reconstruct the amplitude-based magnitude and do not report how much skill
+the shape branch carries on its own, nor test whether it encodes
+signal-to-noise ratio.
+
+On Turkish data, \citet{li2024} applied a deep-learning picker and an
+existing magnitude network to KOERI recordings of the 2023
+Kahramanma\-ra\c{s} aftershocks and observed a slight underestimation of
+catalogue magnitudes, attributed to noise and differing magnitude scales.
+\citet{celik2026} fine-tuned a network trained on a global data set with
+KOERI records and amplitude-based auxiliary features; its error fell
+steadily with increasing SNR, and the author noted that the random
+partition used is less strict than event- or station-disjoint designs.
+
+Gradient-boosted decision trees \citep{ke2017} on engineered features
+offer a transparent alternative, for which exact tree-based Shapley values
+\citep{lundberg2020} and permutation importance \citep{breiman2001} are
+available; for correlated features, conditional or grouped schemes are
+preferable \citep{strobl2008}.
 
 \subsection{Leakage and structured validation}
-Leakage, information about the target entering through an unintended route,
-inflates apparent skill \citep{kaufman2011}, and models readily exploit such
-shortcuts \citep{geirhos2020}. For data with spatial and hierarchical
-structure, random cross-validation is optimistic and blocked designs are
-recommended \citep{roberts2017}. In this problem, amplitude can leak through
-signal-to-noise-dependent shapes, station selection and catalogue metadata,
-and site response can leak across folds that share stations.
+Leakage, information about the target entering through an unintended
+route, inflates apparent skill \citep{kaufman2011}, and models readily
+exploit such shortcuts \citep{geirhos2020}. For data with spatial and
+hierarchical structure, random cross-validation is optimistic and blocked
+designs are recommended \citep{roberts2017}. In this problem, amplitude can
+leak through SNR-dependent shapes (as for duration magnitude), station
+selection and catalogue metadata, and site response can leak across folds
+that share stations.
 
 \subsection{Gap addressed}
-To the author's knowledge, the literature reviewed here does not quantify how
-much magnitude information remains when amplitude and its proxies are removed
-by construction and audited empirically, nor ranks physically interpretable
-descriptors under a validation design that excludes shared events and shared
-stations. A systematic literature search with full-text access is required to
-confirm this assessment.
+The studies reviewed here either use amplitude to estimate magnitude, or
+separate shape from amplitude only as an architectural device and then
+recombine them. None of those found quantifies how much magnitude
+information remains in amplitude-invariant descriptors once their
+sensitivity to SNR is audited, nor ranks physically interpretable
+descriptors under a validation design that excludes shared events and
+shared stations; no such study was found for Turkish data at $M\,2$--4.
+This assessment rests on abstracts and openly accessible full texts and
+should be confirmed through a database search with institutional access.
 
 \section{Data}
 \label{sec:data}
@@ -569,7 +648,7 @@ Planned work: longer and multiple windows to test whether the large-magnitude
 saturation is a resolution effect; sensitivity analyses of $Q(f)$, site
 $\kappa$, the leakage threshold and window lengths, with region- and
 sequence-held-out validation; a second network and period; an early-warning
-variant using the first seconds of P; and a full literature review.
+variant using the first seconds of P.
 
 \section*{Data and code availability}
 The processing and analysis code, including automated tests and complete
@@ -589,7 +668,9 @@ accessed through the Claude Code command-line agent, in October 2026. It was use
 \item \textbf{Analysis}: execution of the experiments, the leakage audit and
   the importance analyses, and production of figures and tables;
 \item \textbf{Literature}: identification of candidate references by web
-  search and verification of their bibliographic data against Crossref;
+  search, verification of their bibliographic data against publisher pages
+  or Crossref, and checking of cited findings against abstracts and openly
+  accessible full texts (paywalled full texts were not consulted);
 \item \textbf{Writing}: drafting of this manuscript.
 \end{enumerate}
 The research question and the main methodological decisions were set by the
